@@ -11,7 +11,7 @@ st.title("Fair Lending Analysis Dashboard")
 
 # Define GitHub URLs for default datasets
 default_pricing_url = "https://github.com/colby-k/Fair-Lending-Streamlit-App/blob/main/Pricing_data.csv"
-default_uw_url = "https://raw.githubusercontent.com/YOUR_USERNAME/Fair-Lending-Streamlit-App/main/UW_data.csv"
+default_uw_url = "https://github.com/colby-k/Fair-Lending-Streamlit-App/blob/main/UW_data.csv"
 
 # Tabs for the two analyses
 tab1, tab2 = st.tabs(["🏷️ Price Testing", "📝 Credit Decision Testing"])
