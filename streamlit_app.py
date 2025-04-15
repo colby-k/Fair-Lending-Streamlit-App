@@ -10,7 +10,7 @@ st.set_page_config(page_title="Fair Lending Analysis", layout="wide")
 st.title("Fair Lending Analysis Dashboard")
 
 # Define GitHub URLs for default datasets
-default_pricing_url = "https://raw.githubusercontent.com/YOUR_USERNAME/Fair-Lending-Streamlit-App/main/Pricing_data.csv"
+default_pricing_url = "https://github.com/colby-k/Fair-Lending-Streamlit-App/blob/main/Pricing_data.csv"
 default_uw_url = "https://raw.githubusercontent.com/YOUR_USERNAME/Fair-Lending-Streamlit-App/main/UW_data.csv"
 
 # Tabs for the two analyses
