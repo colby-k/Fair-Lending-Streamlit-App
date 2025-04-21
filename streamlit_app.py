@@ -43,7 +43,7 @@ with pricing_tab:
     st.dataframe(group_stats)
 
     # Visualization
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 4))
     sns.boxplot(x=demo_col, y="AIP", data=df, ax=ax)
     plt.xticks(rotation=45)
     st.pyplot(fig)
@@ -80,7 +80,7 @@ with uw_tab:
 
     # Bar chart
     approval_rate_percent = approval_rate.div(approval_rate.sum(axis=1), axis=0) * 100
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 4))
     approval_rate_percent.plot(kind="bar", stacked=True, ax=ax)
     plt.ylabel("% of Applications")
     plt.xticks(rotation=45)
