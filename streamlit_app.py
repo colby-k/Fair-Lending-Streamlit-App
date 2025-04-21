@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
+import textwrap  # ✅ Added to fix wrapping error
+
 
 # Page setup
 st.set_page_config(page_title="Fair Lending Analysis", layout="wide")
