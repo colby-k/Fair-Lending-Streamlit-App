@@ -42,10 +42,14 @@ with pricing_tab:
     group_stats = df.groupby(demo_col)["AIP"].agg(["count", "mean", "std"])
     st.dataframe(group_stats)
 
-    # Visualization
-    fig, ax = plt.subplots(figsize=(8, 4))
-    sns.boxplot(x=demo_col, y="AIP", data=df, ax=ax)
-    plt.xticks(rotation=45)
+    # Visualization (customized to match notebook style)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    sns.boxplot(x=demo_col, y="AIP", data=df, ax=ax, palette="Set2", linewidth=1.2, fliersize=3)
+    ax.set_title(f"AIP Distribution by {demo_col}", fontsize=14, fontweight='bold')
+    ax.set_xlabel(demo_col, fontsize=12)
+    ax.set_ylabel("AIP", fontsize=12)
+    plt.xticks(rotation=30)
+    sns.despine()
     st.pyplot(fig)
 
     # Statistical test
@@ -78,12 +82,15 @@ with uw_tab:
     approval_rate = df.groupby([demo_col, "HmdaActionTaken"]).size().unstack().fillna(0)
     st.dataframe(approval_rate)
 
-    # Bar chart
+    # Bar chart (customized)
     approval_rate_percent = approval_rate.div(approval_rate.sum(axis=1), axis=0) * 100
-    fig, ax = plt.subplots(figsize=(8, 4))
-    approval_rate_percent.plot(kind="bar", stacked=True, ax=ax)
-    plt.ylabel("% of Applications")
-    plt.xticks(rotation=45)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    approval_rate_percent.plot(kind="bar", stacked=True, ax=ax, colormap="Pastel1")
+    ax.set_title(f"Approval vs Denial % by {demo_col}", fontsize=14, fontweight='bold')
+    ax.set_ylabel("% of Applications", fontsize=12)
+    ax.set_xlabel(demo_col, fontsize=12)
+    plt.xticks(rotation=30)
+    sns.despine()
     st.pyplot(fig)
 
     # Statistical test (Chi-square)
