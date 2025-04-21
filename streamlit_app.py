@@ -12,8 +12,8 @@ st.title("📊 Fair Lending Analysis Tool")
 # Load data
 @st.cache_data
 def load_data():
-    pricing = pd.read_csv("/mnt/data/Pricing_data.csv")
-    uw = pd.read_csv("/mnt/data/UW_data.csv")
+    pricing = pd.read_csv("Pricing_data.csv")
+    uw = pd.read_csv("UW_data.csv")
     return pricing, uw
 
 pricing_df, uw_df = load_data()
