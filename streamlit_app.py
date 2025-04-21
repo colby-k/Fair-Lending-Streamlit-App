@@ -1,90 +1,91 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from scipy import stats
-from bioinfokit.analys import stat
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import stats
 
+# Page setup
 st.set_page_config(page_title="Fair Lending Analysis", layout="wide")
-st.title("Fair Lending Analysis Dashboard")
+st.title("📊 Fair Lending Analysis Tool")
 
-# Define GitHub URLs for default datasets
-default_pricing_url = "https://raw.githubusercontent.com/colby-k/Fair-Lending-Streamlit-App/refs/heads/main/Pricing_data.csv"
-default_uw_url = "https://raw.githubusercontent.com/colby-k/Fair-Lending-Streamlit-App/refs/heads/main/UW_data.csv"
+# Load data
+@st.cache_data
+def load_data():
+    pricing = pd.read_csv("/mnt/data/Pricing_data.csv")
+    uw = pd.read_csv("/mnt/data/UW_data.csv")
+    return pricing, uw
 
-# Tabs for the two analyses
-tab1, tab2 = st.tabs(["🏷️ Price Testing", "📝 Credit Decision Testing"])
+pricing_df, uw_df = load_data()
 
-# --- PRICE TESTING TAB ---
-with tab1:
-    st.header("Price Testing")
+# Tabs
+pricing_tab, uw_tab = st.tabs(["Pricing Analysis", "Underwriting Analysis"])
 
-    use_default_price = st.checkbox("Use default pricing data from GitHub", value=True)
-    if use_default_price:
-        df_price = pd.read_csv(default_pricing_url)
-    else:
-        pricing_file = st.file_uploader("Upload Pricing Data", type=["csv", "xlsx"], key="price")
-        if pricing_file:
-            df_price = pd.read_csv(pricing_file) if pricing_file.name.endswith(".csv") else pd.read_excel(pricing_file)
-        else:
-            st.stop()
+# Shared options
+demographic_cols = ["Race", "Sex", "Ethnicity", "Age"]
 
-    st.write("### Data Preview")
-    st.dataframe(df_price.head())
+# --- Pricing Analysis ---
+with pricing_tab:
+    st.header("Pricing Disparity Analysis")
+    demo_col = st.selectbox("Select demographic group", demographic_cols, key="pricing_demo")
+    loan_types = pricing_df["LoanType"].dropna().unique().tolist()
+    selected_loan = st.selectbox("Filter by Loan Type", ["All"] + loan_types, key="pricing_loan")
 
-    # Let user select group and numeric fields
-    group_field = st.selectbox("Select Grouping Column (e.g. Race, Sex)", df_price.columns)
-    value_field = st.selectbox("Select Numeric Column (e.g. Rate, APR)", df_price.select_dtypes(include=np.number).columns)
+    df = pricing_df.copy()
+    if selected_loan != "All":
+        df = df[df["LoanType"] == selected_loan]
 
-    if df_price[group_field].dtype == 'O' or pd.api.types.is_categorical_dtype(df_price[group_field]):
-        st.write(f"### Distribution of {value_field} by {group_field}")
-        fig, ax = plt.subplots()
-        sns.boxplot(data=df_price, x=group_field, y=value_field, ax=ax)
-        st.pyplot(fig)
+    df = df[[demo_col, "AIP"]].dropna()
+    st.markdown(f"### AIP by {demo_col}")
 
-        st.write("### ANOVA Test Results")
-        try:
-            res = stat()
-            res.anova_stat(df=df_price, res_var=value_field, factor_var=group_field)
-            st.dataframe(res.anova_summary.round(4))
-        except Exception as e:
-            st.error(f"ANOVA failed: {e}")
-    else:
-        st.warning("Selected grouping column is not categorical. ANOVA requires a categorical grouping variable.")
+    # Summary stats
+    group_stats = df.groupby(demo_col)["AIP"].agg(["count", "mean", "std"])
+    st.dataframe(group_stats)
 
-# --- CREDIT DECISION TESTING TAB ---
-with tab2:
-    st.header("Credit Decision Testing")
+    # Visualization
+    fig, ax = plt.subplots()
+    sns.boxplot(x=demo_col, y="AIP", data=df, ax=ax)
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
 
-    use_default_uw = st.checkbox("Use default underwriting data from GitHub", value=True)
-    if use_default_uw:
-        df_uw = pd.read_csv(default_uw_url)
-    else:
-        uw_file = st.file_uploader("Upload Underwriting Data", type=["csv", "xlsx"], key="uw")
-        if uw_file:
-            df_uw = pd.read_csv(uw_file) if uw_file.name.endswith(".csv") else pd.read_excel(uw_file)
-        else:
-            st.stop()
+    # Statistical test
+    groups = [group["AIP"].values for _, group in df.groupby(demo_col)]
+    if len(groups) == 2:
+        stat, pval = stats.ttest_ind(*groups, equal_var=False)
+        st.write(f"**T-test p-value:** {pval:.4f}")
+    elif len(groups) > 2:
+        stat, pval = stats.f_oneway(*groups)
+        st.write(f"**ANOVA p-value:** {pval:.4f}")
 
-    st.write("### Data Preview")
-    st.dataframe(df_uw.head())
+# --- Underwriting Analysis ---
+with uw_tab:
+    st.header("Underwriting Disparity Analysis")
+    demo_col = st.selectbox("Select demographic group", demographic_cols, key="uw_demo")
+    loan_types = uw_df["LoanType"].dropna().unique().tolist()
+    selected_loan = st.selectbox("Filter by Loan Type", ["All"] + loan_types, key="uw_loan")
+    purpose_filter = st.selectbox("Loan Purpose", ["All"] + uw_df["Purpose"].dropna().unique().tolist())
 
-    # Let user select group and outcome fields
-    group_field_uw = st.selectbox("Select Grouping Column (e.g. Race, Sex)", df_uw.columns, key="group_uw")
-    outcome_field_uw = st.selectbox("Select Outcome Column (e.g. Approved, Denied)", df_uw.columns, key="outcome_uw")
+    df = uw_df.copy()
+    if selected_loan != "All":
+        df = df[df["LoanType"] == selected_loan]
+    if purpose_filter != "All":
+        df = df[df["Purpose"] == purpose_filter]
 
-    st.write(f"### Approval Rates by {group_field_uw}")
-    summary = df_uw.groupby(group_field_uw)[outcome_field_uw].value_counts(normalize=True).unstack().fillna(0)
-    st.dataframe(summary.round(3))
+    df = df[df["HmdaActionTaken"].isin(["Loan Originated", "Application denied"])]
+    df = df[[demo_col, "HmdaActionTaken"]].dropna()
 
-    st.write("### Chi-Square Test")
-    contingency = pd.crosstab(df_uw[group_field_uw], df_uw[outcome_field_uw])
-    chi2, p, dof, ex = stats.chi2_contingency(contingency)
-    st.write(f"Chi-square Statistic: {chi2:.4f}")
-    st.write(f"p-value: {p:.4f}")
+    st.markdown(f"### Approval Rates by {demo_col}")
+    approval_rate = df.groupby([demo_col, "HmdaActionTaken"]).size().unstack().fillna(0)
+    st.dataframe(approval_rate)
 
-    fig2, ax2 = plt.subplots()
-    summary.plot(kind='bar', stacked=True, ax=ax2)
-    ax2.set_ylabel("Proportion")
-    st.pyplot(fig2)
+    # Bar chart
+    approval_rate_percent = approval_rate.div(approval_rate.sum(axis=1), axis=0) * 100
+    fig, ax = plt.subplots()
+    approval_rate_percent.plot(kind="bar", stacked=True, ax=ax)
+    plt.ylabel("% of Applications")
+    plt.xticks(rotation=45)
+    st.pyplot(fig)
+
+    # Statistical test (Chi-square)
+    chi2, pval, _, _ = stats.chi2_contingency(approval_rate.fillna(0))
+    st.write(f"**Chi-square test p-value:** {pval:.4f}")
