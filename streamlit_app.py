@@ -48,7 +48,9 @@ with pricing_tab:
     ax.set_title(f"AIP Distribution by {demo_col}", fontsize=14, fontweight='bold')
     ax.set_xlabel(demo_col, fontsize=12)
     ax.set_ylabel("AIP", fontsize=12)
-    plt.xticks(rotation=30)
+    labels = [label.get_text() for label in ax.get_xticklabels()]
+    wrapped_labels = ["\n".join(textwrap.wrap(label, width=10)) for label in labels]
+    ax.set_xticklabels(wrapped_labels, rotation=0)
     sns.despine()
     st.pyplot(fig)
 
@@ -89,7 +91,9 @@ with uw_tab:
     ax.set_title(f"Approval vs Denial % by {demo_col}", fontsize=14, fontweight='bold')
     ax.set_ylabel("% of Applications", fontsize=12)
     ax.set_xlabel(demo_col, fontsize=12)
-    plt.xticks(rotation=30)
+    labels = [label.get_text() for label in ax.get_xticklabels()]
+    wrapped_labels = ["\n".join(textwrap.wrap(label, width=10)) for label in labels]
+    ax.set_xticklabels(wrapped_labels, rotation=0)
     sns.despine()
     st.pyplot(fig)
 
