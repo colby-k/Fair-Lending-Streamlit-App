@@ -8,7 +8,11 @@ import textwrap  # ✅ Added to fix wrapping error
 
 
 # Page setup
-st.set_page_config(page_title="Fair Lending Analysis", layout="wide")
+st.set_page_config(
+    page_title="Fair Lending Analysis",
+    page_icon="portfolio.ico",  # Icon file in root directory
+    layout="wide"
+)
 st.title("📊 Fair Lending Analysis Tool")
 
 # Load data
