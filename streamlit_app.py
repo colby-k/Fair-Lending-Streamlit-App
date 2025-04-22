@@ -4,15 +4,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
-import textwrap  # ✅ Added to fix wrapping error
+import textwrap  # ✅ Used for label wrapping
 
-
-# Page setup
+# ✅ Page setup with favicon
 st.set_page_config(
     page_title="Fair Lending Analysis",
-    page_icon="portfolio.ico",  # Icon file in root directory
+    page_icon="portfolio.ico",  # Make sure this is in your repo root
     layout="wide"
 )
+
 st.title("📊 Fair Lending Analysis Tool")
 
 # Load data
@@ -48,7 +48,7 @@ with pricing_tab:
     group_stats = df.groupby(demo_col)["AIP"].agg(["count", "mean", "std"])
     st.dataframe(group_stats)
 
-    # Visualization (customized to match notebook style)
+    # Visualization
     fig, ax = plt.subplots(figsize=(10, 5))
     sns.boxplot(x=demo_col, y="AIP", data=df, ax=ax, palette="Set2", linewidth=1.2, fliersize=3)
     ax.set_title(f"AIP Distribution by {demo_col}", fontsize=14, fontweight='bold')
@@ -90,7 +90,7 @@ with uw_tab:
     approval_rate = df.groupby([demo_col, "HmdaActionTaken"]).size().unstack().fillna(0)
     st.dataframe(approval_rate)
 
-    # Bar chart (customized)
+    # Bar chart
     approval_rate_percent = approval_rate.div(approval_rate.sum(axis=1), axis=0) * 100
     fig, ax = plt.subplots(figsize=(10, 5))
     approval_rate_percent.plot(kind="bar", stacked=True, ax=ax, colormap="Pastel1")
@@ -103,6 +103,6 @@ with uw_tab:
     sns.despine()
     st.pyplot(fig)
 
-    # Statistical test (Chi-square)
+    # Statistical test
     chi2, pval, _, _ = stats.chi2_contingency(approval_rate.fillna(0))
     st.write(f"**Chi-square test p-value:** {pval:.4f}")
