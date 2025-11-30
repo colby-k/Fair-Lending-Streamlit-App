@@ -1,10 +1,11 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy import stats
 import textwrap  # ✅ Used for label wrapping
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import streamlit as st
+from scipy import stats
 
 # ✅ Page setup with favicon
 st.set_page_config(
@@ -48,15 +49,50 @@ with pricing_tab:
     group_stats = df.groupby(demo_col)["AIP"].agg(["count", "mean", "std"])
     st.dataframe(group_stats)
 
-    # Visualization
+    # Visualization: mean AIP by group with error bars
+    means = group_stats["mean"]
+    stds = group_stats["std"]
+    overall_mean = df["AIP"].mean()
+
     fig, ax = plt.subplots(figsize=(10, 5))
-    sns.boxplot(x=demo_col, y="AIP", data=df, ax=ax, palette="Set2", linewidth=1.2, fliersize=3)
-    ax.set_title(f"AIP Distribution by {demo_col}", fontsize=14, fontweight='bold')
+    ax.bar(means.index, means.values, yerr=stds.values, capsize=5, color="#6baed6")
+
+    ax.set_title(f"Average AIP by {demo_col}", fontsize=14, fontweight="bold")
     ax.set_xlabel(demo_col, fontsize=12)
-    ax.set_ylabel("AIP", fontsize=12)
-    labels = [label.get_text() for label in ax.get_xticklabels()]
+    ax.set_ylabel("Average AIP", fontsize=12)
+
+    # Wrap long x-axis labels
+    labels = [str(label) for label in means.index]
     wrapped_labels = ["\n".join(textwrap.wrap(label, width=10)) for label in labels]
     ax.set_xticklabels(wrapped_labels, rotation=0)
+
+    # Overall mean reference line
+    ax.axhline(
+        overall_mean,
+        color="red",
+        linestyle="--",
+        linewidth=1.5,
+        label=f"Overall mean AIP ({overall_mean:.2f})"
+    )
+
+    # Value labels on bars
+    offset = stds.max()
+    if np.isnan(offset) or offset == 0:
+        offset = 0.05
+    else:
+        offset = offset * 0.05
+
+    for idx, (group, mean_val) in enumerate(means.items()):
+        ax.text(
+            idx,
+            mean_val + offset,
+            f"{mean_val:.2f}",
+            ha="center",
+            va="bottom",
+            fontsize=9
+        )
+
+    ax.legend()
     sns.despine()
     st.pyplot(fig)
 
@@ -90,19 +126,59 @@ with uw_tab:
     approval_rate = df.groupby([demo_col, "HmdaActionTaken"]).size().unstack().fillna(0)
     st.dataframe(approval_rate)
 
-    # Bar chart
+    # Approval % by group
     approval_rate_percent = approval_rate.div(approval_rate.sum(axis=1), axis=0) * 100
-    fig, ax = plt.subplots(figsize=(10, 5))
-    approval_rate_percent.plot(kind="bar", stacked=True, ax=ax, colormap="Pastel1")
-    ax.set_title(f"Approval vs Denial % by {demo_col}", fontsize=14, fontweight='bold')
-    ax.set_ylabel("% of Applications", fontsize=12)
-    ax.set_xlabel(demo_col, fontsize=12)
-    labels = [label.get_text() for label in ax.get_xticklabels()]
-    wrapped_labels = ["\n".join(textwrap.wrap(label, width=10)) for label in labels]
-    ax.set_xticklabels(wrapped_labels, rotation=0)
-    sns.despine()
-    st.pyplot(fig)
+
+    if "Loan Originated" not in approval_rate_percent.columns:
+        st.warning("No 'Loan Originated' records found for this filter combination.")
+    else:
+        approval_df = approval_rate_percent["Loan Originated"].reset_index()
+        approval_df.columns = [demo_col, "Approval %"]
+        approval_df = approval_df.sort_values("Approval %", ascending=False)
+
+        overall_approval = (
+            approval_rate["Loan Originated"].sum()
+            / approval_rate.sum().sum()
+            * 100
+        )
+
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.bar(approval_df[demo_col], approval_df["Approval %"], color="#6baed6")
+
+        ax.set_title(f"Approval Rate by {demo_col}", fontsize=14, fontweight="bold")
+        ax.set_ylabel("% Approved (Loan Originated)", fontsize=12)
+        ax.set_xlabel(demo_col, fontsize=12)
+        ax.set_ylim(0, 100)
+
+        # Wrap long x-axis labels
+        labels = [str(label) for label in approval_df[demo_col]]
+        wrapped_labels = ["\n".join(textwrap.wrap(label, width=10)) for label in labels]
+        ax.set_xticklabels(wrapped_labels, rotation=0)
+
+        # Overall approval reference line
+        ax.axhline(
+            overall_approval,
+            color="red",
+            linestyle="--",
+            linewidth=1.5,
+            label=f"Overall approval rate ({overall_approval:.1f}%)"
+        )
+
+        # Value labels on bars
+        for idx, row in approval_df.iterrows():
+            ax.text(
+                idx,
+                row["Approval %"] + 1,
+                f"{row['Approval %']:.1f}%",
+                ha="center",
+                va="bottom",
+                fontsize=9
+            )
+
+        ax.legend()
+        sns.despine()
+        st.pyplot(fig)
 
     # Statistical test
     chi2, pval, _, _ = stats.chi2_contingency(approval_rate.fillna(0))
-    st.write(f"**Chi-square test p-value:** {pval:.4f}")
+    st.write(f"**Chi-square test p-value:** `{pval:.4f}`")
