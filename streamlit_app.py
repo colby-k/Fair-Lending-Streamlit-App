@@ -14,7 +14,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("📊 Fair Lending Analysis Tool")
+st.title("Fair Lending Analysis Tool")
 
 # Load data
 @st.cache_data
